@@ -81,5 +81,8 @@ func InitRouter(middlewares ...gin.HandlerFunc) *gin.Engine {
 	adminLogin := router.Group("/admin_login")
 	controller.AdminLoginRegister(adminLogin)
 
+	service := router.Group("/service")
+	controller.ServiceRegister(service)
+
 	return router
 }

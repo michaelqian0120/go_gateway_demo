@@ -34,3 +34,7 @@
 
 [session]
     secret="go_gateway_demo_secret"
+
+[cluster]
+    ip="127.0.0.1"
+    http_server_port=8081
