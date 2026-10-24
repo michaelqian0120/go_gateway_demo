@@ -1,6 +1,8 @@
 package dao
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -11,11 +13,13 @@ const (
 )
 
 type ServiceInfo struct {
-	Id          int64  `json:"id" gorm:"column:id;primary_key"`
-	LoadType    int    `json:"load_type" gorm:"column:load_type"`
-	ServiceName string `json:"service_name" gorm:"column:service_name"`
-	ServiceDesc string `json:"service_desc" gorm:"column:service_desc"`
-	IsDelete    int    `json:"is_delete" gorm:"column:is_delete"`
+	Id          int64     `json:"id" gorm:"column:id;primary_key"`
+	LoadType    int       `json:"load_type" gorm:"column:load_type"`
+	ServiceName string    `json:"service_name" gorm:"column:service_name"`
+	ServiceDesc string    `json:"service_desc" gorm:"column:service_desc"`
+	CreateAt    time.Time `json:"create_at" gorm:"column:create_at"`
+	UpdateAt    time.Time `json:"update_at" gorm:"column:update_at"`
+	IsDelete    int       `json:"is_delete" gorm:"column:is_delete"`
 }
 
 func (service *ServiceInfo) TableName() string {
