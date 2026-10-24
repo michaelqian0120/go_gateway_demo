@@ -34,7 +34,3 @@
 
 [session]
     secret="go_gateway_demo_secret"
-
-[admin]
-    username="admin"
-    password="123456"

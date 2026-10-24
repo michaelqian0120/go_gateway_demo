@@ -16,6 +16,7 @@ require (
 	github.com/swaggo/swag v1.6.5
 	golang_common v0.0.0
 	gopkg.in/go-playground/validator.v9 v9.29.0
+	gorm.io/gorm v1.22.4
 )
 
 replace golang_common => ../golang_common

@@ -6,8 +6,10 @@ import (
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 
+	"go_gateway_demo/dao"
 	"go_gateway_demo/dto"
 	"go_gateway_demo/middleware"
+	"go_gateway_demo/public"
 	"golang_common/lib"
 )
 
@@ -37,9 +39,25 @@ func (admin *AdminLoginController) AdminLogin(c *gin.Context) {
 		return
 	}
 
-	adminUsername := lib.GetStringConf("base.admin.username")
-	adminPassword := lib.GetStringConf("base.admin.password")
-	if params.Username != adminUsername || params.Password != adminPassword {
+	tx, err := lib.GetGormPool("default")
+	if err != nil {
+		middleware.ResponseError(c, middleware.InternalErrorCode, err)
+		return
+	}
+
+	//1. params.Username 取得管理员信息 adminInfo
+	adminInfoSearch := &dao.AdminInfo{UserName: params.Username}
+	adminInfo, err := adminInfoSearch.Find(tx, adminInfoSearch)
+	if err != nil {
+		middleware.ResponseError(c, middleware.InternalErrorCode, errors.New("用户名或密码错误"))
+		return
+	}
+
+	//2. adminInfo.Salt + params.Password sha256 => saltPassword
+	saltPassword := public.GenSaltPassword(adminInfo.Salt, params.Password)
+
+	//3. saltPassword == adminInfo.Password
+	if saltPassword != adminInfo.Password {
 		middleware.ResponseError(c, middleware.InternalErrorCode, errors.New("用户名或密码错误"))
 		return
 	}
