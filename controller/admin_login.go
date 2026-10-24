@@ -27,11 +27,11 @@ func AdminLoginRegister(group *gin.RouterGroup) {
 // @ID /admin_login/login
 // @Accept  json
 // @Produce  json
-// @Param body body dto.LoginInput true "body"
+// @Param body body dto.AdminLoginInput true "body"
 // @Success 200 {object} middleware.Response{data=string} "success"
 // @Router /admin_login/login [post]
 func (admin *AdminLoginController) AdminLogin(c *gin.Context) {
-	params := &dto.LoginInput{}
+	params := &dto.AdminLoginInput{}
 	if err := params.BindingValidParams(c); err != nil {
 		middleware.ResponseError(c, middleware.ValidErrorCode, err)
 		return
