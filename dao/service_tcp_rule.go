@@ -19,3 +19,13 @@ func (t *ServiceTCPRule) Find(tx *gorm.DB, serviceId int64) (*ServiceTCPRule, er
 	err := tx.Where("service_id=?", serviceId).Find(out).Error
 	return out, err
 }
+
+func (t *ServiceTCPRule) FindByPort(tx *gorm.DB, port int) (*ServiceTCPRule, error) {
+	out := &ServiceTCPRule{}
+	err := tx.Where("port=?", port).Find(out).Error
+	return out, err
+}
+
+func (t *ServiceTCPRule) Save(tx *gorm.DB) error {
+	return tx.Save(t).Error
+}

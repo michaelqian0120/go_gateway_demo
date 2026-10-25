@@ -102,11 +102,21 @@ func TranslationMiddleware() gin.HandlerFunc {
 					ipList, weightList = input.IpList, input.WeightList
 				case dto.ServiceUpdateHTTPInput:
 					ipList, weightList = input.IpList, input.WeightList
+				case dto.ServiceAddTCPInput:
+					ipList, weightList = input.IpList, input.WeightList
+				case dto.ServiceUpdateTCPInput:
+					ipList, weightList = input.IpList, input.WeightList
+				case dto.ServiceAddGRPCInput:
+					ipList, weightList = input.IpList, input.WeightList
+				case dto.ServiceUpdateGRPCInput:
+					ipList, weightList = input.IpList, input.WeightList
 				}
 				if len(strings.Split(ipList, ",")) != len(strings.Split(weightList, ",")) {
 					sl.ReportError(weightList, "WeightList", "WeightList", "ip_weight_count", "")
 				}
-			}, dto.ServiceAddHTTPInput{}, dto.ServiceUpdateHTTPInput{})
+			}, dto.ServiceAddHTTPInput{}, dto.ServiceUpdateHTTPInput{},
+				dto.ServiceAddTCPInput{}, dto.ServiceUpdateTCPInput{},
+				dto.ServiceAddGRPCInput{}, dto.ServiceUpdateGRPCInput{})
 			val.RegisterTranslation("ip_weight_count", trans, func(ut ut.Translator) error {
 				return ut.Add("ip_weight_count", "ip列表与权重列表数量不一致", true)
 			}, func(ut ut.Translator, fe validator.FieldError) string {

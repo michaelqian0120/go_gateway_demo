@@ -20,3 +20,13 @@ func (t *ServiceGRPCRule) Find(tx *gorm.DB, serviceId int64) (*ServiceGRPCRule, 
 	err := tx.Where("service_id=?", serviceId).Find(out).Error
 	return out, err
 }
+
+func (t *ServiceGRPCRule) FindByPort(tx *gorm.DB, port int) (*ServiceGRPCRule, error) {
+	out := &ServiceGRPCRule{}
+	err := tx.Where("port=?", port).Find(out).Error
+	return out, err
+}
+
+func (t *ServiceGRPCRule) Save(tx *gorm.DB) error {
+	return tx.Save(t).Error
+}
