@@ -6,7 +6,7 @@ import (
 )
 
 type ServiceAddHTTPInput struct {
-	ServiceName string `form:"service_name" json:"service_name" comment:"服务名称" validate:"required"`
+	ServiceName string `form:"service_name" json:"service_name" comment:"服务名称" validate:"required,service_name"`
 	ServiceDesc string `form:"service_desc" json:"service_desc" comment:"服务描述" validate:"required"`
 
 	RuleType       int    `form:"rule_type" json:"rule_type" comment:"匹配类型 0=url前缀 1=域名" validate:"min=0,max=1"`

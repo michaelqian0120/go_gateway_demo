@@ -10,6 +10,7 @@ import (
 	en_translations "gopkg.in/go-playground/validator.v9/translations/en"
 	zh_translations "gopkg.in/go-playground/validator.v9/translations/zh"
 	"reflect"
+	"regexp"
 )
 
 // 设置Translation
@@ -55,6 +56,18 @@ func TranslationMiddleware() gin.HandlerFunc {
 				return ut.Add("is-validuser", "{0} 填写不正确哦", true)
 			}, func(ut ut.Translator, fe validator.FieldError) string {
 				t, _ := ut.T("is-validuser", fe.Field())
+				return t
+			})
+
+			//服务名称校验：6-128位字母、数字、下划线
+			val.RegisterValidation("service_name", func(fl validator.FieldLevel) bool {
+				matched, _ := regexp.MatchString(`^[a-zA-Z0-9_]{6,128}$`, fl.Field().String())
+				return matched
+			})
+			val.RegisterTranslation("service_name", trans, func(ut ut.Translator) error {
+				return ut.Add("service_name", "{0} 必须是6-128位字母、数字、下划线", true)
+			}, func(ut ut.Translator, fe validator.FieldError) string {
+				t, _ := ut.T("service_name", fe.Field())
 				return t
 			})
 			break
