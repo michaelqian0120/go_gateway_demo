@@ -84,5 +84,8 @@ func InitRouter(middlewares ...gin.HandlerFunc) *gin.Engine {
 	service := router.Group("/service")
 	controller.ServiceRegister(service)
 
+	app := router.Group("/app")
+	controller.AppRegister(app)
+
 	return router
 }

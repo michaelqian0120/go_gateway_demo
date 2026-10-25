@@ -94,6 +94,25 @@ func TranslationMiddleware() gin.HandlerFunc {
 				return t
 			})
 
+			//租户app_id唯一性校验
+			val.RegisterValidation("unique_app_id", func(fl validator.FieldLevel) bool {
+				tx, err := lib.GetGormPool("default")
+				if err != nil {
+					return false
+				}
+				existAppInfo, err := (&dao.AppInfo{}).FindByAppID(tx, fl.Field().String())
+				if err != nil {
+					return false
+				}
+				return existAppInfo.Id == 0
+			})
+			val.RegisterTranslation("unique_app_id", trans, func(ut ut.Translator) error {
+				return ut.Add("unique_app_id", "{0} 已存在", true)
+			}, func(ut ut.Translator, fe validator.FieldError) string {
+				t, _ := ut.T("unique_app_id", fe.Field())
+				return t
+			})
+
 			//ip列表与权重列表数量需保持一致
 			val.RegisterStructValidation(func(sl validator.StructLevel) {
 				var ipList, weightList string

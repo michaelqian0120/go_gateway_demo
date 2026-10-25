@@ -29,6 +29,16 @@ func (app *AppInfo) Find(tx *gorm.DB, search *AppInfo) (*AppInfo, error) {
 	return out, err
 }
 
+func (app *AppInfo) FindByAppID(tx *gorm.DB, appId string) (*AppInfo, error) {
+	out := &AppInfo{}
+	err := tx.Where("app_id=? and is_delete=0", appId).Find(out).Error
+	return out, err
+}
+
+func (app *AppInfo) Save(tx *gorm.DB) error {
+	return tx.Save(app).Error
+}
+
 func (app *AppInfo) PageList(tx *gorm.DB, keyword string, pageNo int, pageSize int) ([]AppInfo, int64, error) {
 	query := tx.Model(&AppInfo{}).Where("is_delete=0")
 	if keyword != "" {
