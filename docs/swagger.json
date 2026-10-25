@@ -1,13 +1,12 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {},
-        "license": {}
+        "contact": {}
     },
     "paths": {
-        "/demo/bind": {
+        "/admin_login/login": {
             "post": {
-                "description": "测试数据绑定",
+                "description": "管理员登录",
                 "consumes": [
                     "application/json"
                 ],
@@ -15,18 +14,18 @@
                     "application/json"
                 ],
                 "tags": [
-                    "用户"
+                    "管理员接口"
                 ],
-                "summary": "测试数据绑定",
-                "operationId": "/demo/bind",
+                "summary": "管理员登录",
+                "operationId": "/admin_login/login",
                 "parameters": [
                     {
                         "description": "body",
-                        "name": "polygon",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.DemoInput"
+                            "$ref": "#/definitions/dto.AdminLoginInput"
                         }
                     }
                 ],
@@ -42,7 +41,229 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.DemoInput"
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/admin_login/login_info": {
+            "get": {
+                "description": "获取管理员登录信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "管理员接口"
+                ],
+                "summary": "获取管理员登录信息",
+                "operationId": "/admin_login/login_info",
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/public.AdminSessionInfo"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/admin_login/logout": {
+            "get": {
+                "description": "管理员退出登录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "管理员接口"
+                ],
+                "summary": "管理员退出登录",
+                "operationId": "/admin_login/logout",
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/service/service_add_http": {
+            "post": {
+                "description": "添加HTTP服务",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "添加HTTP服务",
+                "operationId": "/service/service_add_http",
+                "parameters": [
+                    {
+                        "description": "body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ServiceAddHTTPInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/service/service_delete": {
+            "post": {
+                "description": "删除服务",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "删除服务",
+                "operationId": "/service/service_delete",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "服务ID",
+                        "name": "id",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/service/service_list": {
+            "get": {
+                "description": "服务列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "服务列表",
+                "operationId": "/service/service_list",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "关键词",
+                        "name": "info",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页数",
+                        "name": "page_no",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页条数",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.ServiceListOutput"
                                         }
                                     }
                                 }
@@ -54,45 +275,214 @@
         }
     },
     "definitions": {
-        "dto.DemoInput": {
+        "dto.AdminLoginInput": {
             "type": "object",
             "required": [
-                "age",
-                "name",
-                "passwd"
+                "password",
+                "username"
             ],
             "properties": {
-                "age": {
+                "password": {
+                    "type": "string",
+                    "example": ""
+                },
+                "username": {
+                    "type": "string",
+                    "example": ""
+                }
+            }
+        },
+        "dto.ServiceAddHTTPInput": {
+            "type": "object",
+            "required": [
+                "ip_list",
+                "rule",
+                "service_desc",
+                "service_name",
+                "weight_list"
+            ],
+            "properties": {
+                "black_list": {
+                    "type": "string"
+                },
+                "check_interval": {
+                    "type": "integer"
+                },
+                "check_method": {
+                    "type": "integer"
+                },
+                "check_timeout": {
+                    "type": "integer"
+                },
+                "clientip_flow_limit": {
+                    "type": "integer"
+                },
+                "forbid_list": {
+                    "type": "string"
+                },
+                "header_transfor": {
+                    "type": "string"
+                },
+                "ip_list": {
+                    "type": "string"
+                },
+                "need_https": {
                     "type": "integer",
-                    "example": 20
+                    "maximum": 1,
+                    "minimum": 0
                 },
-                "name": {
-                    "type": "string",
-                    "example": "姓名"
+                "need_strip_uri": {
+                    "type": "integer",
+                    "maximum": 1,
+                    "minimum": 0
                 },
-                "passwd": {
-                    "type": "string",
-                    "example": "123456"
+                "need_websocket": {
+                    "type": "integer",
+                    "maximum": 1,
+                    "minimum": 0
+                },
+                "open_auth": {
+                    "type": "integer",
+                    "maximum": 1,
+                    "minimum": 0
+                },
+                "round_type": {
+                    "type": "integer",
+                    "maximum": 3,
+                    "minimum": 0
+                },
+                "rule": {
+                    "type": "string"
+                },
+                "rule_type": {
+                    "type": "integer",
+                    "maximum": 1,
+                    "minimum": 0
+                },
+                "service_desc": {
+                    "type": "string"
+                },
+                "service_flow_limit": {
+                    "type": "integer"
+                },
+                "service_name": {
+                    "type": "string"
+                },
+                "upstream_connect_timeout": {
+                    "type": "integer"
+                },
+                "upstream_header_timeout": {
+                    "type": "integer"
+                },
+                "upstream_idle_timeout": {
+                    "type": "integer"
+                },
+                "upstream_max_idle": {
+                    "type": "integer"
+                },
+                "url_rewrite": {
+                    "type": "string"
+                },
+                "weight_list": {
+                    "type": "string"
+                },
+                "white_host_name": {
+                    "type": "string"
+                },
+                "white_list": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ServiceListItemOutput": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "qpd": {
+                    "type": "integer"
+                },
+                "qps": {
+                    "type": "integer"
+                },
+                "service_addr": {
+                    "type": "string"
+                },
+                "service_desc": {
+                    "type": "string"
+                },
+                "service_name": {
+                    "type": "string"
+                },
+                "service_type": {
+                    "type": "string"
+                },
+                "total_node": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.ServiceListOutput": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ServiceListItemOutput"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
         "middleware.Response": {
             "type": "object",
             "properties": {
-                "data": {
-                    "type": "object"
-                },
+                "data": {},
                 "errmsg": {
                     "type": "string"
                 },
                 "errno": {
+                    "$ref": "#/definitions/middleware.ResponseCode"
+                },
+                "stack": {},
+                "trace_id": {}
+            }
+        },
+        "middleware.ResponseCode": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3,
+                401,
+                1000,
+                2001
+            ],
+            "x-enum-varnames": [
+                "SuccessCode",
+                "UndefErrorCode",
+                "ValidErrorCode",
+                "InternalErrorCode",
+                "InvalidRequestErrorCode",
+                "CustomizeCode",
+                "GROUPALL_SAVE_FLOWERROR"
+            ]
+        },
+        "public.AdminSessionInfo": {
+            "type": "object",
+            "properties": {
+                "id": {
                     "type": "integer"
                 },
-                "stack": {
-                    "type": "object"
+                "login_time": {
+                    "type": "integer"
                 },
-                "trace_id": {
-                    "type": "object"
+                "user_name": {
+                    "type": "string"
                 }
             }
         }

@@ -25,3 +25,13 @@ func (t *ServiceHTTPRule) Find(tx *gorm.DB, serviceId int64) (*ServiceHTTPRule, 
 	err := tx.Where("service_id=?", serviceId).Find(out).Error
 	return out, err
 }
+
+func (t *ServiceHTTPRule) FindByRule(tx *gorm.DB, rule string) (*ServiceHTTPRule, error) {
+	out := &ServiceHTTPRule{}
+	err := tx.Where("rule=?", rule).Find(out).Error
+	return out, err
+}
+
+func (t *ServiceHTTPRule) Save(tx *gorm.DB) error {
+	return tx.Save(t).Error
+}

@@ -32,6 +32,10 @@ func (t *ServiceLoadBalance) Find(tx *gorm.DB, serviceId int64) (*ServiceLoadBal
 	return out, err
 }
 
+func (t *ServiceLoadBalance) Save(tx *gorm.DB) error {
+	return tx.Save(t).Error
+}
+
 func (t *ServiceLoadBalance) NodeCount() int {
 	if t.IpList == "" {
 		return 0

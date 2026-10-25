@@ -24,3 +24,7 @@ func (t *ServiceAccessControl) Find(tx *gorm.DB, serviceId int64) (*ServiceAcces
 	err := tx.Where("service_id=?", serviceId).Find(out).Error
 	return out, err
 }
+
+func (t *ServiceAccessControl) Save(tx *gorm.DB) error {
+	return tx.Save(t).Error
+}

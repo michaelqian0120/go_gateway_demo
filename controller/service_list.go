@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +19,8 @@ type ServiceController struct {
 func ServiceRegister(group *gin.RouterGroup) {
 	service := &ServiceController{}
 	group.GET("/service_list", middleware.SessionAuthMiddleware(), service.ServiceList)
+	group.POST("/service_delete", middleware.SessionAuthMiddleware(), service.ServiceDelete)
+	group.POST("/service_add_http", middleware.SessionAuthMiddleware(), service.ServiceAddHTTP)
 }
 
 // ServiceList godoc
@@ -83,6 +86,43 @@ func (service *ServiceController) ServiceList(c *gin.Context) {
 		Total: total,
 		List:  outList,
 	})
+}
+
+// ServiceDelete godoc
+// @Summary 删除服务
+// @Description 删除服务
+// @Tags 服务管理
+// @ID /service/service_delete
+// @Accept  json
+// @Produce  json
+// @Param id formData int true "服务ID"
+// @Success 200 {object} middleware.Response{data=string} "success"
+// @Router /service/service_delete [post]
+func (service *ServiceController) ServiceDelete(c *gin.Context) {
+	params := &dto.ServiceDeleteInput{}
+	if err := params.BindingValidParams(c); err != nil {
+		middleware.ResponseError(c, middleware.ValidErrorCode, err)
+		return
+	}
+
+	tx, err := lib.GetGormPool("default")
+	if err != nil {
+		middleware.ResponseError(c, middleware.InternalErrorCode, err)
+		return
+	}
+
+	serviceInfo, err := (&dao.ServiceInfo{Id: params.Id}).Find(tx, &dao.ServiceInfo{Id: params.Id})
+	if err != nil {
+		middleware.ResponseError(c, middleware.InternalErrorCode, errors.New("服务不存在"))
+		return
+	}
+
+	serviceInfo.IsDelete = 1
+	if err := serviceInfo.Save(tx); err != nil {
+		middleware.ResponseError(c, middleware.InternalErrorCode, err)
+		return
+	}
+	middleware.ResponseSuccess(c, "删除成功")
 }
 
 func (service *ServiceController) loadTypeText(loadType int) string {

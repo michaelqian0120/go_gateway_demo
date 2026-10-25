@@ -1,8 +1,9 @@
 package dto
 
 import (
-	"github.com/gin-gonic/gin"
 	"go_gateway_demo/public"
+
+	"github.com/gin-gonic/gin"
 )
 
 type ServiceListInput struct {
@@ -24,6 +25,14 @@ type ServiceListItemOutput struct {
 	Qps         int64  `json:"qps"`
 	Qpd         int64  `json:"qpd"`
 	TotalNode   int    `json:"total_node"`
+}
+
+type ServiceDeleteInput struct {
+	Id int64 `form:"id" json:"id" comment:"服务ID" validate:"required"`
+}
+
+func (params *ServiceDeleteInput) BindingValidParams(c *gin.Context) error {
+	return public.DefaultGetValidParams(c, params)
 }
 
 type ServiceListOutput struct {

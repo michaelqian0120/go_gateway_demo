@@ -26,6 +26,22 @@ func (service *ServiceInfo) TableName() string {
 	return "gateway_service_info"
 }
 
+func (service *ServiceInfo) Find(tx *gorm.DB, search *ServiceInfo) (*ServiceInfo, error) {
+	out := &ServiceInfo{}
+	err := tx.Where(search).Find(out).Error
+	return out, err
+}
+
+func (service *ServiceInfo) Save(tx *gorm.DB) error {
+	return tx.Save(service).Error
+}
+
+func (service *ServiceInfo) FindByName(tx *gorm.DB, serviceName string) (*ServiceInfo, error) {
+	out := &ServiceInfo{}
+	err := tx.Where("service_name=? and is_delete=0", serviceName).Find(out).Error
+	return out, err
+}
+
 func (service *ServiceInfo) PageList(tx *gorm.DB, keyword string, pageNo int, pageSize int) ([]ServiceInfo, int64, error) {
 	query := tx.Model(&ServiceInfo{}).Where("is_delete=0")
 	if keyword != "" {
