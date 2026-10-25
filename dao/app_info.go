@@ -39,6 +39,12 @@ func (app *AppInfo) Save(tx *gorm.DB) error {
 	return tx.Save(app).Error
 }
 
+func (app *AppInfo) Count(tx *gorm.DB) (int64, error) {
+	var total int64
+	err := tx.Model(&AppInfo{}).Where("is_delete=0").Count(&total).Error
+	return total, err
+}
+
 func (app *AppInfo) PageList(tx *gorm.DB, keyword string, pageNo int, pageSize int) ([]AppInfo, int64, error) {
 	query := tx.Model(&AppInfo{}).Where("is_delete=0")
 	if keyword != "" {

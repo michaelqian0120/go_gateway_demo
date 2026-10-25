@@ -87,5 +87,8 @@ func InitRouter(middlewares ...gin.HandlerFunc) *gin.Engine {
 	app := router.Group("/app")
 	controller.AppRegister(app)
 
+	dashboard := router.Group("/dashboard")
+	controller.DashboardRegister(dashboard)
+
 	return router
 }

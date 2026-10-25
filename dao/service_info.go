@@ -42,6 +42,23 @@ func (service *ServiceInfo) FindByName(tx *gorm.DB, serviceName string) (*Servic
 	return out, err
 }
 
+func (service *ServiceInfo) Count(tx *gorm.DB) (int64, error) {
+	var total int64
+	err := tx.Model(&ServiceInfo{}).Where("is_delete=0").Count(&total).Error
+	return total, err
+}
+
+type ServiceLoadTypeCount struct {
+	LoadType int   `json:"load_type"`
+	Count    int64 `json:"count"`
+}
+
+func (service *ServiceInfo) GroupByLoadType(tx *gorm.DB) ([]ServiceLoadTypeCount, error) {
+	list := []ServiceLoadTypeCount{}
+	err := tx.Model(&ServiceInfo{}).Select("load_type, count(*) as count").Where("is_delete=0").Group("load_type").Scan(&list).Error
+	return list, err
+}
+
 func (service *ServiceInfo) PageList(tx *gorm.DB, keyword string, pageNo int, pageSize int) ([]ServiceInfo, int64, error) {
 	query := tx.Model(&ServiceInfo{}).Where("is_delete=0")
 	if keyword != "" {
