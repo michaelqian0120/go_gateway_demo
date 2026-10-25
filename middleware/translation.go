@@ -5,7 +5,9 @@ import (
 	"github.com/go-playground/locales/en"
 	"github.com/go-playground/locales/zh"
 	"github.com/go-playground/universal-translator"
+	"go_gateway_demo/dao"
 	"go_gateway_demo/public"
+	"golang_common/lib"
 	"gopkg.in/go-playground/validator.v9"
 	en_translations "gopkg.in/go-playground/validator.v9/translations/en"
 	zh_translations "gopkg.in/go-playground/validator.v9/translations/zh"
@@ -68,6 +70,25 @@ func TranslationMiddleware() gin.HandlerFunc {
 				return ut.Add("service_name", "{0} 必须是6-128位字母、数字、下划线", true)
 			}, func(ut ut.Translator, fe validator.FieldError) string {
 				t, _ := ut.T("service_name", fe.Field())
+				return t
+			})
+
+			//服务名称唯一性校验
+			val.RegisterValidation("unique_service_name", func(fl validator.FieldLevel) bool {
+				tx, err := lib.GetGormPool("default")
+				if err != nil {
+					return false
+				}
+				existServiceInfo, err := (&dao.ServiceInfo{}).FindByName(tx, fl.Field().String())
+				if err != nil {
+					return false
+				}
+				return existServiceInfo.Id == 0
+			})
+			val.RegisterTranslation("unique_service_name", trans, func(ut ut.Translator) error {
+				return ut.Add("unique_service_name", "{0} 已存在", true)
+			}, func(ut ut.Translator, fe validator.FieldError) string {
+				t, _ := ut.T("unique_service_name", fe.Field())
 				return t
 			})
 			break

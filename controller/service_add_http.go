@@ -41,14 +41,6 @@ func (service *ServiceController) ServiceAddHTTP(c *gin.Context) {
 		return
 	}
 
-	if existServiceInfo, err := (&dao.ServiceInfo{}).FindByName(tx, params.ServiceName); err != nil {
-		middleware.ResponseError(c, middleware.InternalErrorCode, err)
-		return
-	} else if existServiceInfo.Id != 0 {
-		middleware.ResponseError(c, middleware.ValidErrorCode, errors.New("服务名称已存在"))
-		return
-	}
-
 	if existHTTPRule, err := (&dao.ServiceHTTPRule{}).FindByRule(tx, params.Rule); err != nil {
 		middleware.ResponseError(c, middleware.InternalErrorCode, err)
 		return
