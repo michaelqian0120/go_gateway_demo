@@ -2,7 +2,6 @@ package controller
 
 import (
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -27,11 +26,6 @@ func (service *ServiceController) ServiceAddHTTP(c *gin.Context) {
 	params := &dto.ServiceAddHTTPInput{}
 	if err := params.BindingValidParams(c); err != nil {
 		middleware.ResponseError(c, middleware.ValidErrorCode, err)
-		return
-	}
-
-	if len(strings.Split(params.IpList, ",")) != len(strings.Split(params.WeightList, ",")) {
-		middleware.ResponseError(c, middleware.ValidErrorCode, errors.New("ip列表与权重列表数量不一致"))
 		return
 	}
 

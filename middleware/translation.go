@@ -6,6 +6,7 @@ import (
 	"github.com/go-playground/locales/zh"
 	"github.com/go-playground/universal-translator"
 	"go_gateway_demo/dao"
+	"go_gateway_demo/dto"
 	"go_gateway_demo/public"
 	"golang_common/lib"
 	"gopkg.in/go-playground/validator.v9"
@@ -13,6 +14,7 @@ import (
 	zh_translations "gopkg.in/go-playground/validator.v9/translations/zh"
 	"reflect"
 	"regexp"
+	"strings"
 )
 
 // 设置Translation
@@ -89,6 +91,20 @@ func TranslationMiddleware() gin.HandlerFunc {
 				return ut.Add("unique_service_name", "{0} 已存在", true)
 			}, func(ut ut.Translator, fe validator.FieldError) string {
 				t, _ := ut.T("unique_service_name", fe.Field())
+				return t
+			})
+
+			//ip列表与权重列表数量需保持一致
+			val.RegisterStructValidation(func(sl validator.StructLevel) {
+				input := sl.Current().Interface().(dto.ServiceAddHTTPInput)
+				if len(strings.Split(input.IpList, ",")) != len(strings.Split(input.WeightList, ",")) {
+					sl.ReportError(input.WeightList, "WeightList", "WeightList", "ip_weight_count", "")
+				}
+			}, dto.ServiceAddHTTPInput{})
+			val.RegisterTranslation("ip_weight_count", trans, func(ut ut.Translator) error {
+				return ut.Add("ip_weight_count", "ip列表与权重列表数量不一致", true)
+			}, func(ut ut.Translator, fe validator.FieldError) string {
+				t, _ := ut.T("ip_weight_count")
 				return t
 			})
 			break
