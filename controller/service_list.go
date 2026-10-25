@@ -23,6 +23,7 @@ func ServiceRegister(group *gin.RouterGroup) {
 	group.POST("/service_add_http", middleware.SessionAuthMiddleware(), service.ServiceAddHTTP)
 	group.POST("/service_update_http", middleware.SessionAuthMiddleware(), service.ServiceUpdateHTTP)
 	group.GET("/service_detail", middleware.SessionAuthMiddleware(), service.ServiceDetail)
+	group.GET("/service_statistics", middleware.SessionAuthMiddleware(), service.ServiceStatistics)
 }
 
 // ServiceList godoc

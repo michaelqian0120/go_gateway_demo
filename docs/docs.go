@@ -226,6 +226,51 @@ const docTemplate = `{
                 }
             }
         },
+        "/service/service_detail": {
+            "get": {
+                "description": "服务详情",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "服务详情",
+                "operationId": "/service/service_detail",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "服务ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.ServiceDetailOutput"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/service/service_list": {
             "get": {
                 "description": "服务列表",
@@ -283,9 +328,218 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/service/service_update_http": {
+            "post": {
+                "description": "更新HTTP服务",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "更新HTTP服务",
+                "operationId": "/service/service_update_http",
+                "parameters": [
+                    {
+                        "description": "body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ServiceUpdateHTTPInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "dao.ServiceAccessControl": {
+            "type": "object",
+            "properties": {
+                "black_list": {
+                    "type": "string"
+                },
+                "clientip_flow_limit": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "open_auth": {
+                    "type": "integer"
+                },
+                "service_flow_limit": {
+                    "type": "integer"
+                },
+                "service_id": {
+                    "type": "integer"
+                },
+                "white_host_name": {
+                    "type": "string"
+                },
+                "white_list": {
+                    "type": "string"
+                }
+            }
+        },
+        "dao.ServiceGRPCRule": {
+            "type": "object",
+            "properties": {
+                "header_transfor": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "service_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dao.ServiceHTTPRule": {
+            "type": "object",
+            "properties": {
+                "header_transfor": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "need_https": {
+                    "type": "integer"
+                },
+                "need_strip_uri": {
+                    "type": "integer"
+                },
+                "need_websocket": {
+                    "type": "integer"
+                },
+                "rule": {
+                    "type": "string"
+                },
+                "rule_type": {
+                    "type": "integer"
+                },
+                "service_id": {
+                    "type": "integer"
+                },
+                "url_rewrite": {
+                    "type": "string"
+                }
+            }
+        },
+        "dao.ServiceInfo": {
+            "type": "object",
+            "properties": {
+                "create_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_delete": {
+                    "type": "integer"
+                },
+                "load_type": {
+                    "type": "integer"
+                },
+                "service_desc": {
+                    "type": "string"
+                },
+                "service_name": {
+                    "type": "string"
+                },
+                "update_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dao.ServiceLoadBalance": {
+            "type": "object",
+            "properties": {
+                "check_interval": {
+                    "type": "integer"
+                },
+                "check_method": {
+                    "type": "integer"
+                },
+                "check_timeout": {
+                    "type": "integer"
+                },
+                "forbid_list": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "ip_list": {
+                    "type": "string"
+                },
+                "round_type": {
+                    "type": "integer"
+                },
+                "service_id": {
+                    "type": "integer"
+                },
+                "upstream_connect_timeout": {
+                    "type": "integer"
+                },
+                "upstream_header_timeout": {
+                    "type": "integer"
+                },
+                "upstream_idle_timeout": {
+                    "type": "integer"
+                },
+                "upstream_max_idle": {
+                    "type": "integer"
+                },
+                "weight_list": {
+                    "type": "string"
+                }
+            }
+        },
+        "dao.ServiceTCPRule": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "service_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.AdminLoginInput": {
             "type": "object",
             "required": [
@@ -371,7 +625,8 @@ const docTemplate = `{
                     "minimum": 0
                 },
                 "service_desc": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 255
                 },
                 "service_flow_limit": {
                     "type": "integer"
@@ -402,6 +657,29 @@ const docTemplate = `{
                 },
                 "white_list": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.ServiceDetailOutput": {
+            "type": "object",
+            "properties": {
+                "access_control": {
+                    "$ref": "#/definitions/dao.ServiceAccessControl"
+                },
+                "grpc_rule": {
+                    "$ref": "#/definitions/dao.ServiceGRPCRule"
+                },
+                "http_rule": {
+                    "$ref": "#/definitions/dao.ServiceHTTPRule"
+                },
+                "info": {
+                    "$ref": "#/definitions/dao.ServiceInfo"
+                },
+                "load_balance": {
+                    "$ref": "#/definitions/dao.ServiceLoadBalance"
+                },
+                "tcp_rule": {
+                    "$ref": "#/definitions/dao.ServiceTCPRule"
                 }
             }
         },
@@ -445,6 +723,109 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
+                }
+            }
+        },
+        "dto.ServiceUpdateHTTPInput": {
+            "type": "object",
+            "required": [
+                "id",
+                "ip_list",
+                "rule",
+                "service_desc",
+                "weight_list"
+            ],
+            "properties": {
+                "black_list": {
+                    "type": "string"
+                },
+                "check_interval": {
+                    "type": "integer"
+                },
+                "check_method": {
+                    "type": "integer"
+                },
+                "check_timeout": {
+                    "type": "integer"
+                },
+                "clientip_flow_limit": {
+                    "type": "integer"
+                },
+                "forbid_list": {
+                    "type": "string"
+                },
+                "header_transfor": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "ip_list": {
+                    "type": "string"
+                },
+                "need_https": {
+                    "type": "integer",
+                    "maximum": 1,
+                    "minimum": 0
+                },
+                "need_strip_uri": {
+                    "type": "integer",
+                    "maximum": 1,
+                    "minimum": 0
+                },
+                "need_websocket": {
+                    "type": "integer",
+                    "maximum": 1,
+                    "minimum": 0
+                },
+                "open_auth": {
+                    "type": "integer",
+                    "maximum": 1,
+                    "minimum": 0
+                },
+                "round_type": {
+                    "type": "integer",
+                    "maximum": 3,
+                    "minimum": 0
+                },
+                "rule": {
+                    "type": "string"
+                },
+                "rule_type": {
+                    "type": "integer",
+                    "maximum": 1,
+                    "minimum": 0
+                },
+                "service_desc": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "service_flow_limit": {
+                    "type": "integer"
+                },
+                "upstream_connect_timeout": {
+                    "type": "integer"
+                },
+                "upstream_header_timeout": {
+                    "type": "integer"
+                },
+                "upstream_idle_timeout": {
+                    "type": "integer"
+                },
+                "upstream_max_idle": {
+                    "type": "integer"
+                },
+                "url_rewrite": {
+                    "type": "string"
+                },
+                "weight_list": {
+                    "type": "string"
+                },
+                "white_host_name": {
+                    "type": "string"
+                },
+                "white_list": {
+                    "type": "string"
                 }
             }
         },
