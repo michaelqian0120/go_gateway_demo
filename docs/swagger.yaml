@@ -128,6 +128,19 @@ definitions:
       service_id:
         type: integer
     type: object
+  dto.AdminInfoOutput:
+    properties:
+      id:
+        type: integer
+      login_time:
+        type: string
+      name:
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+    type: object
   dto.AdminLoginInput:
     properties:
       password:
@@ -712,15 +725,6 @@ definitions:
     - InvalidRequestErrorCode
     - CustomizeCode
     - GROUPALL_SAVE_FLOWERROR
-  public.AdminSessionInfo:
-    properties:
-      id:
-        type: integer
-      login_time:
-        type: integer
-      user_name:
-        type: string
-    type: object
 info:
   contact: {}
 paths:
@@ -768,7 +772,7 @@ paths:
             - $ref: '#/definitions/middleware.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/public.AdminSessionInfo'
+                  $ref: '#/definitions/dto.AdminInfoOutput'
               type: object
       summary: 获取管理员登录信息
       tags:

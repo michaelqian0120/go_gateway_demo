@@ -111,7 +111,7 @@ func (admin *AdminLoginController) AdminLoginOut(c *gin.Context) {
 // @ID /admin_login/login_info
 // @Accept  json
 // @Produce  json
-// @Success 200 {object} middleware.Response{data=public.AdminSessionInfo} "success"
+// @Success 200 {object} middleware.Response{data=dto.AdminInfoOutput} "success"
 // @Router /admin_login/login_info [get]
 func (admin *AdminLoginController) AdminLoginInfo(c *gin.Context) {
 	session := sessions.Default(c)
@@ -126,5 +126,12 @@ func (admin *AdminLoginController) AdminLoginInfo(c *gin.Context) {
 		middleware.ResponseError(c, middleware.InternalErrorCode, err)
 		return
 	}
-	middleware.ResponseSuccess(c, sessionInfo)
+
+	out := &dto.AdminInfoOutput{
+		ID:        sessionInfo.Id,
+		Name:      sessionInfo.UserName,
+		LoginTime: time.Unix(sessionInfo.LoginTime, 0),
+		Roles:     []string{"admin"},
+	}
+	middleware.ResponseSuccess(c, out)
 }

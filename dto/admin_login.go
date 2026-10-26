@@ -1,6 +1,8 @@
 package dto
 
 import (
+	"time"
+
 	"go_gateway_demo/public"
 
 	"github.com/gin-gonic/gin"
@@ -56,4 +58,11 @@ type RemoveUserInput struct {
 
 func (params *RemoveUserInput) BindingValidParams(c *gin.Context) error {
 	return public.DefaultGetValidParams(c, params)
+}
+
+type AdminInfoOutput struct {
+	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
+	LoginTime time.Time `json:"login_time"`
+	Roles     []string  `json:"roles"`
 }

@@ -88,7 +88,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.AdminSessionInfo"
+                                            "$ref": "#/definitions/dto.AdminInfoOutput"
                                         }
                                     }
                                 }
@@ -1167,6 +1167,26 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.AdminInfoOutput": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "login_time": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "dto.AdminLoginInput": {
             "type": "object",
             "required": [
@@ -2000,20 +2020,6 @@ const docTemplate = `{
                 "CustomizeCode",
                 "GROUPALL_SAVE_FLOWERROR"
             ]
-        },
-        "public.AdminSessionInfo": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "login_time": {
-                    "type": "integer"
-                },
-                "user_name": {
-                    "type": "string"
-                }
-            }
         }
     }
 }`
