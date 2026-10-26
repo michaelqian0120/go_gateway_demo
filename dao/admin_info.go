@@ -25,3 +25,7 @@ func (admin *AdminInfo) Find(tx *gorm.DB, search *AdminInfo) (*AdminInfo, error)
 	err := tx.Where(search).Find(out).Error
 	return out, err
 }
+
+func (admin *AdminInfo) Save(tx *gorm.DB) error {
+	return tx.Save(admin).Error
+}

@@ -232,6 +232,14 @@ definitions:
     - id
     - name
     type: object
+  dto.ChangePwdInput:
+    properties:
+      password:
+        example: ""
+        type: string
+    required:
+    - password
+    type: object
   dto.DashFlowStatOutput:
     properties:
       service_type_ratio:
@@ -728,6 +736,34 @@ definitions:
 info:
   contact: {}
 paths:
+  /admin_login/change_pwd:
+    post:
+      consumes:
+      - application/json
+      description: 修改密码
+      operationId: /admin_login/change_pwd
+      parameters:
+      - description: body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ChangePwdInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/middleware.Response'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 修改密码
+      tags:
+      - 管理员接口
   /admin_login/login:
     post:
       consumes:

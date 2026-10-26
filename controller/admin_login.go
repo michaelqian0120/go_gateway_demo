@@ -23,6 +23,7 @@ func AdminLoginRegister(group *gin.RouterGroup) {
 	group.POST("/login", admin.AdminLogin)
 	group.GET("/logout", admin.AdminLoginOut)
 	group.GET("/login_info", middleware.SessionAuthMiddleware(), admin.AdminLoginInfo)
+	group.POST("/change_pwd", middleware.SessionAuthMiddleware(), admin.ChangePwd)
 }
 
 // AdminLogin godoc
@@ -134,4 +135,65 @@ func (admin *AdminLoginController) AdminLoginInfo(c *gin.Context) {
 		Roles:     []string{"admin"},
 	}
 	middleware.ResponseSuccess(c, out)
+}
+
+// ChangePwd godoc
+// @Summary 修改密码
+// @Description 修改密码
+// @Tags 管理员接口
+// @ID /admin_login/change_pwd
+// @Accept  json
+// @Produce  json
+// @Param body body dto.ChangePwdInput true "body"
+// @Success 200 {object} middleware.Response{data=string} "success"
+// @Router /admin_login/change_pwd [post]
+func (admin *AdminLoginController) ChangePwd(c *gin.Context) {
+	params := &dto.ChangePwdInput{}
+	if err := params.BindingValidParams(c); err != nil {
+		middleware.ResponseError(c, middleware.ValidErrorCode, err)
+		return
+	}
+
+	//1. session 读取当前登录用户
+	session := sessions.Default(c)
+	sessionBts, ok := session.Get(public.AdminSessionInfoKey).(string)
+	if !ok {
+		middleware.ResponseError(c, middleware.InternalErrorCode, errors.New("user not login"))
+		return
+	}
+	sessionInfo := &public.AdminSessionInfo{}
+	if err := json.Unmarshal([]byte(sessionBts), sessionInfo); err != nil {
+		middleware.ResponseError(c, middleware.InternalErrorCode, err)
+		return
+	}
+
+	tx, err := lib.GetGormPool("default")
+	if err != nil {
+		middleware.ResponseError(c, middleware.InternalErrorCode, err)
+		return
+	}
+
+	//2. sessionInfo.Id 取得管理员信息 adminInfo
+	adminInfoSearch := &dao.AdminInfo{Id: sessionInfo.Id}
+	adminInfo, err := adminInfoSearch.Find(tx, adminInfoSearch)
+	if err != nil || adminInfo.Id == 0 {
+		middleware.ResponseError(c, middleware.InternalErrorCode, errors.New("管理员不存在"))
+		return
+	}
+
+	//3. adminInfo.Salt + params.Password sha256 => 新密码保存
+	adminInfo.Password = public.GenSaltPassword(adminInfo.Salt, params.Password)
+	adminInfo.UpdateAt = time.Now()
+	if err := adminInfo.Save(tx); err != nil {
+		middleware.ResponseError(c, middleware.InternalErrorCode, err)
+		return
+	}
+
+	//4. 清除 session，强制重新登录
+	session.Clear()
+	if err := session.Save(); err != nil {
+		middleware.ResponseError(c, middleware.InternalErrorCode, err)
+		return
+	}
+	middleware.ResponseSuccess(c, "修改密码成功，请重新登录")
 }
