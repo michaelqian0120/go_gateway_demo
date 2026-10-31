@@ -2,6 +2,7 @@ package dao
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -11,27 +12,34 @@ import (
 	"go_gateway_demo/reverse_proxy/load_balance"
 )
 
+type lbItem struct {
+	lb        load_balance.LoadBalance
+	signature string
+}
+
 // LoadBalancerManager 按服务名缓存负载均衡器，避免每次请求都重新创建
+// 服务热加载后 ip_list 或 round_type 变化时自动重建
 type LoadBalancerManager struct {
-	lbMap  map[string]load_balance.LoadBalance
+	lbMap  map[string]*lbItem
 	locker sync.RWMutex
 }
 
-var LoadBalancerHandler = &LoadBalancerManager{lbMap: map[string]load_balance.LoadBalance{}}
+var LoadBalancerHandler = &LoadBalancerManager{lbMap: map[string]*lbItem{}}
 
 func (m *LoadBalancerManager) GetLoadBalancer(service *ServiceDetail) (load_balance.LoadBalance, error) {
 	name := service.Info.ServiceName
+	signature := fmt.Sprintf("%d|%s", service.LoadBalance.RoundType, service.LoadBalance.IpList)
 	m.locker.RLock()
-	lb, ok := m.lbMap[name]
+	item, ok := m.lbMap[name]
 	m.locker.RUnlock()
-	if ok {
-		return lb, nil
+	if ok && item.signature == signature {
+		return item.lb, nil
 	}
 
 	m.locker.Lock()
 	defer m.locker.Unlock()
-	if lb, ok := m.lbMap[name]; ok {
-		return lb, nil
+	if item, ok := m.lbMap[name]; ok && item.signature == signature {
+		return item.lb, nil
 	}
 
 	ipList := splitList(service.LoadBalance.IpList)
@@ -47,40 +55,50 @@ func (m *LoadBalancerManager) GetLoadBalancer(service *ServiceDetail) (load_bala
 		addrs = append(addrs, ip)
 	}
 
-	// 第1步只实现random，round_type暂不区分
+	// 目前只实现random，round_type暂不区分
 	rb := load_balance.NewRandomBalance()
 	if err := rb.Add(addrs...); err != nil {
 		return nil, err
 	}
-	m.lbMap[name] = rb
+	m.lbMap[name] = &lbItem{lb: rb, signature: signature}
 	return rb, nil
 }
 
-// TransportManager 按服务名缓存连接池
+type transportItem struct {
+	trans     *http.Transport
+	signature string
+}
+
+// TransportManager 按服务名缓存连接池，上游参数变化时重建并关闭旧连接池的空闲连接
 type TransportManager struct {
-	transportMap map[string]*http.Transport
+	transportMap map[string]*transportItem
 	locker       sync.RWMutex
 }
 
-var TransportHandler = &TransportManager{transportMap: map[string]*http.Transport{}}
+var TransportHandler = &TransportManager{transportMap: map[string]*transportItem{}}
 
 func (m *TransportManager) GetTransport(service *ServiceDetail) *http.Transport {
 	name := service.Info.ServiceName
+	lb := service.LoadBalance
+	signature := fmt.Sprintf("%d|%d|%d|%d", lb.UpstreamConnectTimeout, lb.UpstreamHeaderTimeout, lb.UpstreamIdleTimeout, lb.UpstreamMaxIdle)
 	m.locker.RLock()
-	trans, ok := m.transportMap[name]
+	item, ok := m.transportMap[name]
 	m.locker.RUnlock()
-	if ok {
-		return trans
+	if ok && item.signature == signature {
+		return item.trans
 	}
 
 	m.locker.Lock()
 	defer m.locker.Unlock()
-	if trans, ok := m.transportMap[name]; ok {
-		return trans
+	if item, ok := m.transportMap[name]; ok {
+		if item.signature == signature {
+			return item.trans
+		}
+		// 正在使用的连接不受影响，只关闭空闲连接
+		item.trans.CloseIdleConnections()
 	}
 
-	lb := service.LoadBalance
-	trans = &http.Transport{
+	trans := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
 			Timeout:   secondsOrDefault(lb.UpstreamConnectTimeout, 30),
@@ -91,7 +109,7 @@ func (m *TransportManager) GetTransport(service *ServiceDetail) *http.Transport 
 		ResponseHeaderTimeout: secondsOrDefault(lb.UpstreamHeaderTimeout, 30),
 		TLSHandshakeTimeout:   10 * time.Second,
 	}
-	m.transportMap[name] = trans
+	m.transportMap[name] = &transportItem{trans: trans, signature: signature}
 	return trans
 }
 

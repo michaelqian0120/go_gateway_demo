@@ -1,7 +1,21 @@
 # This is proxy config
 
 [http]
-    addr = ":8080"                      # 代理监听地址
+    addr = "127.0.0.1:8080"             # 代理监听地址。只监听本机，避免Windows防火墙每次go run都弹窗；需要局域网访问时改为 ":8080"
     read_timeout = 10                   # 读取超时时长
     write_timeout = 10                  # 写入超时时长
     max_header_bytes = 20               # 最大的header大小，二进制位长度
+
+[https]
+    addr = "127.0.0.1:4433"             # https代理监听地址，留空则不启动
+    read_timeout = 10
+    write_timeout = 10
+    max_header_bytes = 20
+    # 证书文件不存在时跳过https。本地开发可在项目根目录生成自签名证书：
+    # go run "$(go env GOROOT)/src/crypto/tls/generate_cert.go" --host 127.0.0.1,localhost
+    # 再把生成的 cert.pem、key.pem 移到 conf/dev/cert/ 下（该目录已加入 .gitignore）
+    cert_file = "./conf/dev/cert/cert.pem"
+    key_file = "./conf/dev/cert/key.pem"
+
+[service]
+    reload_interval = 10                # 服务配置热加载间隔（秒），后台修改服务后最多这么久生效

@@ -2,8 +2,10 @@ package dao
 
 import (
 	"errors"
+	"log"
 	"strings"
 	"sync"
+	"time"
 
 	"golang_common/lib"
 
@@ -42,48 +44,112 @@ func NewServiceManager() *ServiceManager {
 // LoadOnce 启动时把所有HTTP服务加载到内存
 func (s *ServiceManager) LoadOnce() error {
 	s.init.Do(func() {
-		tx, err := lib.GetGormPool("default")
-		if err != nil {
-			s.err = err
-			return
-		}
-
-		list := []ServiceInfo{}
-		if err := tx.Where("is_delete=0 and load_type=?", LoadTypeHTTP).Order("id desc").Find(&list).Error; err != nil {
-			s.err = err
-			return
-		}
-
-		s.Locker.Lock()
-		defer s.Locker.Unlock()
-		for i := range list {
-			info := &list[i]
-			httpRule, err := (&ServiceHTTPRule{}).Find(tx, info.Id)
-			if err != nil {
-				s.err = err
-				return
-			}
-			accessControl, err := (&ServiceAccessControl{}).Find(tx, info.Id)
-			if err != nil {
-				s.err = err
-				return
-			}
-			loadBalance, err := (&ServiceLoadBalance{}).Find(tx, info.Id)
-			if err != nil {
-				s.err = err
-				return
-			}
-			detail := &ServiceDetail{
-				Info:          info,
-				HTTPRule:      httpRule,
-				AccessControl: accessControl,
-				LoadBalance:   loadBalance,
-			}
-			s.ServiceMap[info.ServiceName] = detail
-			s.ServiceSlice = append(s.ServiceSlice, detail)
-		}
+		s.err = s.Reload()
 	})
 	return s.err
+}
+
+// Reload 从数据库重新加载所有HTTP服务，整体替换内存中的数据
+// 加载失败时保留旧数据，正在处理的请求不受影响
+func (s *ServiceManager) Reload() error {
+	serviceMap, serviceSlice, err := loadHTTPServices()
+	if err != nil {
+		return err
+	}
+	s.Locker.Lock()
+	s.ServiceMap = serviceMap
+	s.ServiceSlice = serviceSlice
+	s.Locker.Unlock()
+	return nil
+}
+
+// StartAutoReload 定时重新加载服务配置，后台修改、删除服务后无需重启代理
+func (s *ServiceManager) StartAutoReload(interval time.Duration) {
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for range ticker.C {
+			if err := s.Reload(); err != nil {
+				log.Printf(" [ERROR] service manager reload err:%v\n", err)
+			}
+		}
+	}()
+}
+
+// loadHTTPServices 每张表各查一次，避免按服务逐个查询
+func loadHTTPServices() (map[string]*ServiceDetail, []*ServiceDetail, error) {
+	tx, err := lib.GetGormPool("default")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	infoList := []ServiceInfo{}
+	if err := tx.Where("is_delete=0 and load_type=?", LoadTypeHTTP).Order("id desc").Find(&infoList).Error; err != nil {
+		return nil, nil, err
+	}
+	serviceMap := map[string]*ServiceDetail{}
+	serviceSlice := []*ServiceDetail{}
+	if len(infoList) == 0 {
+		return serviceMap, serviceSlice, nil
+	}
+
+	ids := make([]int64, 0, len(infoList))
+	for _, info := range infoList {
+		ids = append(ids, info.Id)
+	}
+
+	httpRules := []ServiceHTTPRule{}
+	if err := tx.Where("service_id in ?", ids).Find(&httpRules).Error; err != nil {
+		return nil, nil, err
+	}
+	accessControls := []ServiceAccessControl{}
+	if err := tx.Where("service_id in ?", ids).Find(&accessControls).Error; err != nil {
+		return nil, nil, err
+	}
+	loadBalances := []ServiceLoadBalance{}
+	if err := tx.Where("service_id in ?", ids).Find(&loadBalances).Error; err != nil {
+		return nil, nil, err
+	}
+
+	httpRuleMap := map[int64]*ServiceHTTPRule{}
+	for i := range httpRules {
+		httpRuleMap[httpRules[i].ServiceId] = &httpRules[i]
+	}
+	accessControlMap := map[int64]*ServiceAccessControl{}
+	for i := range accessControls {
+		accessControlMap[accessControls[i].ServiceId] = &accessControls[i]
+	}
+	loadBalanceMap := map[int64]*ServiceLoadBalance{}
+	for i := range loadBalances {
+		loadBalanceMap[loadBalances[i].ServiceId] = &loadBalances[i]
+	}
+
+	for i := range infoList {
+		info := &infoList[i]
+		httpRule, ok := httpRuleMap[info.Id]
+		if !ok {
+			// 没有接入规则的服务无法匹配请求，跳过
+			log.Printf(" [WARN] service %s has no http rule, skipped\n", info.ServiceName)
+			continue
+		}
+		accessControl, ok := accessControlMap[info.Id]
+		if !ok {
+			accessControl = &ServiceAccessControl{ServiceId: info.Id}
+		}
+		loadBalance, ok := loadBalanceMap[info.Id]
+		if !ok {
+			loadBalance = &ServiceLoadBalance{ServiceId: info.Id}
+		}
+		detail := &ServiceDetail{
+			Info:          info,
+			HTTPRule:      httpRule,
+			AccessControl: accessControl,
+			LoadBalance:   loadBalance,
+		}
+		serviceMap[info.ServiceName] = detail
+		serviceSlice = append(serviceSlice, detail)
+	}
+	return serviceMap, serviceSlice, nil
 }
 
 // HTTPAccessMode 按接入方式匹配服务：域名完全匹配优先，其次取最长的URL前缀匹配

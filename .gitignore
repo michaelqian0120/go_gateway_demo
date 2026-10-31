@@ -1,3 +1,4 @@
 *.log
 .idea
 go_gateway_demo
+conf/*/cert/
