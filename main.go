@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"go_gateway_demo/router"
 	"golang_common/lib"
 	"os"
@@ -8,14 +10,37 @@ import (
 	"syscall"
 )
 
+var (
+	endpoint = flag.String("endpoint", "", "input endpoint dashboard or server")
+)
+
 func main() {
-	lib.InitModule("./conf/dev/", []string{"base", "mysql", "redis"})
+	// -config 由 lib.InitModule 定义并解析，这里不能重复定义
+	lib.InitModule("", []string{"base", "mysql", "redis"})
 	defer lib.Destroy()
-	router.HttpServerRun()
+	if *endpoint == "" {
+		flag.Usage()
+		os.Exit(1)
+	}
 
-	quit := make(chan os.Signal)
-	signal.Notify(quit, syscall.SIGKILL, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	if *endpoint == "dashboard" {
+		router.HttpServerRun()
 
-	router.HttpServerStop()
+		quit := make(chan os.Signal)
+		signal.Notify(quit, syscall.SIGKILL, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
+		<-quit
+
+		router.HttpServerStop()
+	} else {
+		router.HttpServerRun()
+
+		fmt.Println("start server")
+
+		quit := make(chan os.Signal)
+		signal.Notify(quit, syscall.SIGKILL, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
+		<-quit
+
+		router.HttpServerStop()
+	}
+
 }
