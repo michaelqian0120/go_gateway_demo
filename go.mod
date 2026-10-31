@@ -14,6 +14,7 @@ require (
 	github.com/swaggo/files v0.0.0-20190704085106-630677cd5c14
 	github.com/swaggo/gin-swagger v1.2.0
 	github.com/swaggo/swag v1.16.6
+	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
 	golang_common v0.0.0
 	gopkg.in/go-playground/validator.v9 v9.29.0
 	gorm.io/gorm v1.22.4
