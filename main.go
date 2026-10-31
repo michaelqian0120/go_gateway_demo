@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"go_gateway_demo/dao"
+	"go_gateway_demo/http_proxy_router"
 	"go_gateway_demo/router"
 	"golang_common/lib"
 	"os"
@@ -32,7 +34,11 @@ func main() {
 
 		router.HttpServerStop()
 	} else {
-		router.HttpServerRun()
+		if err := dao.ServiceManagerHandler.LoadOnce(); err != nil {
+			fmt.Println("load service fail:", err)
+			os.Exit(1)
+		}
+		http_proxy_router.HttpServerRun()
 
 		fmt.Println("start server")
 
@@ -40,7 +46,7 @@ func main() {
 		signal.Notify(quit, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
 		<-quit
 
-		router.HttpServerStop()
+		http_proxy_router.HttpServerStop()
 	}
 
 }
