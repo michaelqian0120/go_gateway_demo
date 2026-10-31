@@ -4,13 +4,14 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"go_gateway_demo/dao"
 	"go_gateway_demo/middleware"
+
+	"github.com/gin-gonic/gin"
 )
 
 // HTTPStripUriMiddleware 前缀匹配的服务开启 need_strip_uri 后，去掉路径里的服务前缀
-// 例如规则 /test_strip_uri：/test_strip_uri/abc -> /abc
+// 例如规则 /test_strip_uri： /test_strip_uri/abc -> /abc
 func HTTPStripUriMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		serviceInterface, ok := c.Get("service")

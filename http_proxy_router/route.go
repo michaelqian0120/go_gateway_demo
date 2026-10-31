@@ -1,8 +1,9 @@
 package http_proxy_router
 
 import (
-	"github.com/gin-gonic/gin"
 	"go_gateway_demo/http_proxy_middleware"
+
+	"github.com/gin-gonic/gin"
 )
 
 func InitRouter(middlewares ...gin.HandlerFunc) *gin.Engine {

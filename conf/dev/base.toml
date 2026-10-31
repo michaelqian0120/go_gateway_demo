@@ -37,4 +37,4 @@
 
 [cluster]
     ip="127.0.0.1"
-    http_server_port=8081
+    http_server_port=8080
