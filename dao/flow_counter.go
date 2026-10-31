@@ -95,3 +95,7 @@ func (m *FlowCounterManager) TotalCounter() *RedisFlowCounter {
 func (m *FlowCounterManager) ServiceCounter(serviceName string) *RedisFlowCounter {
 	return m.getCounter(fmt.Sprintf("%s%s", FlowCountKeyPrefix, serviceName))
 }
+
+func (m *FlowCounterManager) AppCounter(appID string) *RedisFlowCounter {
+	return m.getCounter(fmt.Sprintf("%s%s", AppFlowCountKeyPrefix, appID))
+}
