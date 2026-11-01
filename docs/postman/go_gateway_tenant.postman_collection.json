@@ -1,0 +1,60 @@
+{
+  "info": {
+    "name": "go_gateway 租户认证",
+    "description": "1. 在集合变量里填 app_id、secret\n2. 发送「租户登录获取token」，成功后 access_token 自动保存到集合变量\n3. 发送「带token访问服务」",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8080" },
+    { "key": "app_id", "value": "app_id_a" },
+    { "key": "secret", "value": "" },
+    { "key": "access_token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "租户登录获取token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('登录成功', () => pm.expect(body.errno).to.eql(0));",
+              "if (body.errno === 0) {",
+              "    pm.collectionVariables.set('access_token', body.data.access_token);",
+              "    console.log('access_token 已保存，有效期(秒):', body.data.expires_in);",
+              "} else {",
+              "    pm.collectionVariables.unset('access_token');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "auth": {
+          "type": "basic",
+          "basic": [
+            { "key": "username", "value": "{{app_id}}", "type": "string" },
+            { "key": "password", "value": "{{secret}}", "type": "string" }
+          ]
+        },
+        "url": "{{base_url}}/oauth/tokens"
+      }
+    },
+    {
+      "name": "带token访问服务",
+      "request": {
+        "method": "GET",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            { "key": "token", "value": "{{access_token}}", "type": "string" }
+          ]
+        },
+        "url": "{{base_url}}/test_strip_uri/abc"
+      }
+    }
+  ]
+}
