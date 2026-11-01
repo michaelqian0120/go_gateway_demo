@@ -78,19 +78,22 @@
 
 ### 3. 中间件链（按执行顺序，`http_proxy_router/route.go`）
 
+> 下表中 2→5 的顺序有讲究：租户认证写入 `app` 后租户限流才能识别租户；租户限流排在流量统计之前，被租户限流拒绝的请求不计入租户当天请求量。
+
 | # | 中间件 | 功能 | 错误码 |
 | --- | --- | --- | --- |
 | 1 | `HTTPAccessModeMiddleware` | 根据请求匹配服务 | 1001 未匹配到服务 |
 | 2 | `HTTPProtocolCheckMiddleware` | 协议校验：https / websocket | 4001 服务不支持 https；4002 服务不支持 websocket |
 | 3 | `HTTPJwtAuthTokenMiddleware` | 租户认证 | 2001 上下文无服务；2002 token 缺失/无效/租户不存在 |
-| 4 | `HTTPFlowCountMiddleware` | 流量统计：全站、服务、租户 | — |
-| 5 | `HTTPFlowLimitMiddleware` | 限流：服务级、客户端 IP 级 | 5001 服务限流；5002 客户端 IP 限流 |
-| 6 | `HTTPWhiteListMiddleware` | IP 白名单 | 3001 |
-| 7 | `HTTPBlackListMiddleware` | IP 黑名单 | 3002 |
-| 8 | `HTTPHeaderTransferMiddleware` | 请求头增/改/删 | — |
-| 9 | `HTTPStripUriMiddleware` | 去掉服务前缀 | — |
-| 10 | `HTTPUrlRewriteMiddleware` | URL 正则重写 | — |
-| 11 | `HTTPReverseProxyMiddleware` | 负载均衡 + 反向代理 | 下游异常时返回错误响应 |
+| 4 | `HTTPJwtFlowLimitMiddleware` | 租户限流：qps、qpd | 5003 租户 QPS 限流；5004 租户日请求量限流 |
+| 5 | `HTTPFlowCountMiddleware` | 流量统计：全站、服务、租户 | — |
+| 6 | `HTTPFlowLimitMiddleware` | 限流：服务级、客户端 IP 级 | 5001 服务限流；5002 客户端 IP 限流 |
+| 7 | `HTTPWhiteListMiddleware` | IP 白名单 | 3001 |
+| 8 | `HTTPBlackListMiddleware` | IP 黑名单 | 3002 |
+| 9 | `HTTPHeaderTransferMiddleware` | 请求头增/改/删 | — |
+| 10 | `HTTPStripUriMiddleware` | 去掉服务前缀 | — |
+| 11 | `HTTPUrlRewriteMiddleware` | URL 正则重写 | — |
+| 12 | `HTTPReverseProxyMiddleware` | 负载均衡 + 反向代理 | 下游异常时返回错误响应 |
 
 ### 4. 服务匹配（接入方式）
 - `rule_type=1` 域名接入：`Host`（去掉端口）与规则完全相等
@@ -131,11 +134,21 @@
 dashboard 的 `flow_stat`、`service_statistics`、`app_stat`、`panel_group_data` 读取这些 key 展示今日/昨日按小时的流量。
 
 ### 8. 限流
+**服务级（`HTTPFlowLimitMiddleware`）**
 - 令牌桶（`golang.org/x/time/rate`）
 - `service_flow_limit`：服务总 QPS，超出返回 5001
 - `clientip_flow_limit`：单个客户端 IP 的 QPS，超出返回 5002
 - 值为 0 表示不限流；修改 QPS 后热加载会重建限流器；10 分钟未使用的限流器自动清理
 - 客户端 IP 取 TCP 连接的 `RemoteAddr`，不信任 `X-Forwarded-For`，防止伪造绕过
+
+**租户级（`HTTPJwtFlowLimitMiddleware`，`gateway_app` 表的 `qps` / `qpd`）**
+- 只对带有效 token、已识别出租户的请求生效；值为 0 表示不限
+- `qps`：租户每秒请求数，令牌桶，所有服务共用一个桶，超出返回 5003
+- `qpd`：租户每天请求数，当天请求量 ≥ qpd 时返回 5004，次日 0 点自动恢复
+  - 当天请求量 = Redis `flow_count_app_<app_id>` 中当天各小时之和 + 本实例尚未写入 Redis 的计数
+  - 租户计数器每秒从 Redis 读回当天总量，多个网关实例共享同一份额度；计数器创建时同步读取，网关重启后限流立即生效
+  - 多实例部署时各实例最多有约 1 秒的计数尚未同步，可能略微超出 qpd
+- 在 dashboard 修改租户 qps/qpd 后，随租户热加载生效
 
 ### 9. IP 黑白名单
 - 仅在 `open_auth=1` 时生效
@@ -217,6 +230,8 @@ dashboard 的 `flow_stat`、`service_statistics`、`app_stat`、`panel_group_dat
 | 4002 | 服务不支持 websocket |
 | 5001 | 服务限流 |
 | 5002 | 客户端 IP 限流 |
+| 5003 | 租户 QPS 限流 |
+| 5004 | 租户日请求量（QPD）限流 |
 
 ---
 
@@ -239,7 +254,7 @@ dashboard 的 `flow_stat`、`service_statistics`、`app_stat`、`panel_group_dat
 
 ## 六、待实现
 
-- 租户 QPS / 日请求量（qps / qpd）限制，租户 `white_ips`
+- 租户 `white_ips` 校验
 - 轮询、加权轮询、一致性哈希负载均衡（按 `round_type`）
 - 服务 `white_host_name` 校验
 - 下游健康检查（`check_method` / `check_timeout` / `check_interval`）
