@@ -19,3 +19,8 @@
 
 [service]
     reload_interval = 10                # 服务配置热加载间隔（秒），后台修改服务后最多这么久生效
+
+[jwt]
+    # 租户token签名密钥（HS256）。这是开发环境随机生成的值，生产环境必须单独配置且不要提交到仓库
+    secret = "a7fb79b52463693a2029bdf3993dea9a5172b9a2adc4752509fd176de50e35ef"
+    expire_seconds = 7200               # token有效期（秒）

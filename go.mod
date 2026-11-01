@@ -9,6 +9,7 @@ require (
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-playground/locales v0.13.0
 	github.com/go-playground/universal-translator v0.17.0
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gorilla/sessions v1.1.3 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/swaggo/files v0.0.0-20190704085106-630677cd5c14

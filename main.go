@@ -39,8 +39,13 @@ func main() {
 			fmt.Println("load service fail:", err)
 			os.Exit(1)
 		}
+		if err := dao.AppManagerHandler.LoadOnce(); err != nil {
+			fmt.Println("load app fail:", err)
+			os.Exit(1)
+		}
 		if interval := lib.GetIntConf("proxy.service.reload_interval"); interval > 0 {
 			dao.ServiceManagerHandler.StartAutoReload(time.Duration(interval) * time.Second)
+			dao.AppManagerHandler.StartAutoReload(time.Duration(interval) * time.Second)
 		}
 		http_proxy_router.HttpServerRun()
 		http_proxy_router.HttpsServerRun()

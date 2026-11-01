@@ -14,10 +14,13 @@ func InitRouter(middlewares ...gin.HandlerFunc) *gin.Engine {
 			"message": "pong",
 		})
 	})
+	// 在 router.Use 之前注册，不经过代理中间件
+	router.POST("/oauth/tokens", OAuthTokens)
 
 	router.Use(
 		http_proxy_middleware.HTTPAccessModeMiddleware(),
 		http_proxy_middleware.HTTPProtocolCheckMiddleware(),
+		http_proxy_middleware.HTTPJwtAuthTokenMiddleware(),
 		http_proxy_middleware.HTTPFlowCountMiddleware(),
 		http_proxy_middleware.HTTPFlowLimitMiddleware(),
 		http_proxy_middleware.HTTPWhiteListMiddleware(),
