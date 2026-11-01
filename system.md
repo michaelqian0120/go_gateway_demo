@@ -78,22 +78,23 @@
 
 ### 3. 中间件链（按执行顺序，`http_proxy_router/route.go`）
 
-> 下表中 2→5 的顺序有讲究：租户认证写入 `app` 后租户限流才能识别租户；租户限流排在流量统计之前，被租户限流拒绝的请求不计入租户当天请求量。
+> 下表中 3→6 的顺序有讲究：租户认证写入 `app` 后租户白名单和租户限流才能识别租户；租户白名单排在租户限流之前，被拒绝的 IP 不占用租户的 qps/qpd 额度；租户限流排在流量统计之前，被租户限流拒绝的请求不计入租户当天请求量。
 
 | # | 中间件 | 功能 | 错误码 |
 | --- | --- | --- | --- |
 | 1 | `HTTPAccessModeMiddleware` | 根据请求匹配服务 | 1001 未匹配到服务 |
 | 2 | `HTTPProtocolCheckMiddleware` | 协议校验：https / websocket | 4001 服务不支持 https；4002 服务不支持 websocket |
 | 3 | `HTTPJwtAuthTokenMiddleware` | 租户认证 | 2001 上下文无服务；2002 token 缺失/无效/租户不存在 |
-| 4 | `HTTPJwtFlowLimitMiddleware` | 租户限流：qps、qpd | 5003 租户 QPS 限流；5004 租户日请求量限流 |
-| 5 | `HTTPFlowCountMiddleware` | 流量统计：全站、服务、租户 | — |
-| 6 | `HTTPFlowLimitMiddleware` | 限流：服务级、客户端 IP 级 | 5001 服务限流；5002 客户端 IP 限流 |
-| 7 | `HTTPWhiteListMiddleware` | IP 白名单 | 3001 |
-| 8 | `HTTPBlackListMiddleware` | IP 黑名单 | 3002 |
-| 9 | `HTTPHeaderTransferMiddleware` | 请求头增/改/删 | — |
-| 10 | `HTTPStripUriMiddleware` | 去掉服务前缀 | — |
-| 11 | `HTTPUrlRewriteMiddleware` | URL 正则重写 | — |
-| 12 | `HTTPReverseProxyMiddleware` | 负载均衡 + 反向代理 | 下游异常时返回错误响应 |
+| 4 | `HTTPJwtWhiteListMiddleware` | 租户 IP 白名单 | 3003 不在租户白名单 |
+| 5 | `HTTPJwtFlowLimitMiddleware` | 租户限流：qps、qpd | 5003 租户 QPS 限流；5004 租户日请求量限流 |
+| 6 | `HTTPFlowCountMiddleware` | 流量统计：全站、服务、租户 | — |
+| 7 | `HTTPFlowLimitMiddleware` | 限流：服务级、客户端 IP 级 | 5001 服务限流；5002 客户端 IP 限流 |
+| 8 | `HTTPWhiteListMiddleware` | IP 白名单 | 3001 |
+| 9 | `HTTPBlackListMiddleware` | IP 黑名单 | 3002 |
+| 10 | `HTTPHeaderTransferMiddleware` | 请求头增/改/删 | — |
+| 11 | `HTTPStripUriMiddleware` | 去掉服务前缀 | — |
+| 12 | `HTTPUrlRewriteMiddleware` | URL 正则重写 | — |
+| 13 | `HTTPReverseProxyMiddleware` | 负载均衡 + 反向代理 | 下游异常时返回错误响应 |
 
 ### 4. 服务匹配（接入方式）
 - `rule_type=1` 域名接入：`Host`（去掉端口）与规则完全相等
@@ -151,10 +152,17 @@ dashboard 的 `flow_stat`、`service_statistics`、`app_stat`、`panel_group_dat
 - 在 dashboard 修改租户 qps/qpd 后，随租户热加载生效
 
 ### 9. IP 黑白名单
+**服务级（`service_access_control` 的 `white_list` / `black_list`）**
 - 仅在 `open_auth=1` 时生效
 - `white_list` 非空时只允许名单内 IP（3001）
 - `white_list` 为空时 `black_list` 才生效，名单内 IP 拒绝（3002）
 - 多个 IP 用逗号或换行分隔
+
+**租户级（`gateway_app` 的 `white_ips`，`HTTPJwtWhiteListMiddleware`）**
+- 只对带有效 token、已识别出租户的请求生效；与服务的 `open_auth` 无关
+- `white_ips` 非空时，只允许名单内 IP 使用该租户的 token，否则返回 3003；为空不限制
+- 精确匹配 IP，多个用逗号或换行分隔；客户端 IP 同样取 `RemoteAddr`，伪造 `X-Forwarded-For` 无效
+- 名单中写错的内容不会被忽略：只要名单非空就按名单严格校验（例如样例数据中 `app_id_a` 的 `white_ips` 为占位文本 `white_ips`，会拒绝所有 IP）
 
 ### 10. 请求改写
 执行顺序：header 改写 → strip_uri → url_rewrite。
@@ -226,6 +234,7 @@ dashboard 的 `flow_stat`、`service_statistics`、`app_stat`、`panel_group_dat
 | 2003 | token 签发失败 |
 | 3001 | 不在 IP 白名单 |
 | 3002 | 在 IP 黑名单 |
+| 3003 | 不在租户 IP 白名单 |
 | 4001 | 服务不支持 https |
 | 4002 | 服务不支持 websocket |
 | 5001 | 服务限流 |
@@ -254,7 +263,6 @@ dashboard 的 `flow_stat`、`service_statistics`、`app_stat`、`panel_group_dat
 
 ## 六、待实现
 
-- 租户 `white_ips` 校验
 - 轮询、加权轮询、一致性哈希负载均衡（按 `round_type`）
 - 服务 `white_host_name` 校验
 - 下游健康检查（`check_method` / `check_timeout` / `check_interval`）
