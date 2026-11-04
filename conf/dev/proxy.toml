@@ -17,6 +17,10 @@
     cert_file = "./conf/dev/cert/cert.pem"
     key_file = "./conf/dev/cert/key.pem"
 
+[tcp]
+    # TCP服务的监听IP，端口由每个TCP服务的 port 决定。只监听本机，需要局域网访问时改为 ""（监听所有网卡）
+    host = "127.0.0.1"
+
 [service]
     reload_interval = 10                # 服务配置热加载间隔（秒），后台修改服务后最多这么久生效
 

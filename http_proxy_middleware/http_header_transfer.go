@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go_gateway_demo/dao"
 	"go_gateway_demo/middleware"
+	"go_gateway_demo/public"
 )
 
 // HTTPHeaderTransferMiddleware 按 header_transfor 规则修改发往下游的请求头
@@ -21,7 +22,7 @@ func HTTPHeaderTransferMiddleware() gin.HandlerFunc {
 		}
 		service := serviceInterface.(*dao.ServiceDetail)
 
-		for _, item := range splitRules(service.HTTPRule.HeaderTransfor) {
+		for _, item := range public.SplitRules(service.HTTPRule.HeaderTransfor) {
 			items := strings.Fields(item)
 			if len(items) < 2 {
 				continue
@@ -37,14 +38,4 @@ func HTTPHeaderTransferMiddleware() gin.HandlerFunc {
 		}
 		c.Next()
 	}
-}
-
-func splitRules(s string) []string {
-	out := []string{}
-	for _, item := range strings.FieldsFunc(s, func(r rune) bool { return r == ',' || r == '\n' || r == '\r' }) {
-		if item = strings.TrimSpace(item); item != "" {
-			out = append(out, item)
-		}
-	}
-	return out
 }

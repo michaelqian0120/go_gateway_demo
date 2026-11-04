@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go_gateway_demo/dao"
 	"go_gateway_demo/middleware"
+	"go_gateway_demo/public"
 )
 
 // HTTPJwtWhiteListMiddleware 租户IP白名单：租户配置了 white_ips 时，只允许名单内的IP使用该租户的token
@@ -24,10 +25,10 @@ func HTTPJwtWhiteListMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		whiteIps := splitRules(app.WhiteIps)
+		whiteIps := public.SplitRules(app.WhiteIps)
 		if len(whiteIps) > 0 {
 			clientIP := remoteIP(c)
-			if !inList(clientIP, whiteIps) {
+			if !public.InList(clientIP, whiteIps) {
 				middleware.ResponseError(c, 3003, fmt.Errorf("%s not in app %s white ip list", clientIP, app.AppID))
 				c.Abort()
 				return

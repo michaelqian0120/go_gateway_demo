@@ -6,6 +6,7 @@ import (
 	"go_gateway_demo/dao"
 	"go_gateway_demo/http_proxy_router"
 	"go_gateway_demo/router"
+	"go_gateway_demo/tcp_proxy_router"
 	"golang_common/lib"
 	"os"
 	"os/signal"
@@ -49,6 +50,7 @@ func main() {
 		}
 		http_proxy_router.HttpServerRun()
 		http_proxy_router.HttpsServerRun()
+		tcp_proxy_router.TCPServerRun()
 
 		fmt.Println("start server")
 
@@ -58,6 +60,7 @@ func main() {
 
 		http_proxy_router.HttpServerStop()
 		http_proxy_router.HttpsServerStop()
+		tcp_proxy_router.TCPServerStop()
 	}
 
 }

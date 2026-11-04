@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go_gateway_demo/dao"
 	"go_gateway_demo/middleware"
+	"go_gateway_demo/public"
 )
 
 type urlRewriteRule struct {
@@ -55,7 +56,7 @@ func getUrlRewriteRules(raw string) []urlRewriteRule {
 	}
 
 	rules := []urlRewriteRule{}
-	for _, item := range splitRules(raw) {
+	for _, item := range public.SplitRules(raw) {
 		items := strings.Fields(item)
 		if len(items) != 2 {
 			log.Printf(" [WARN] invalid url_rewrite rule:%q\n", item)

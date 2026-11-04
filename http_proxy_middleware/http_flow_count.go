@@ -3,9 +3,10 @@ package http_proxy_middleware
 import (
 	"errors"
 
-	"github.com/gin-gonic/gin"
 	"go_gateway_demo/dao"
 	"go_gateway_demo/middleware"
+
+	"github.com/gin-gonic/gin"
 )
 
 // HTTPFlowCountMiddleware 统计网关总流量、服务流量和租户流量，供大盘、服务统计和租户统计接口展示

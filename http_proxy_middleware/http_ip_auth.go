@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go_gateway_demo/dao"
 	"go_gateway_demo/middleware"
+	"go_gateway_demo/public"
 )
 
 // HTTPWhiteListMiddleware 开启权限且配置了白名单时，只允许白名单内的IP访问
@@ -21,10 +22,10 @@ func HTTPWhiteListMiddleware() gin.HandlerFunc {
 		}
 		service := serviceInterface.(*dao.ServiceDetail)
 
-		whiteList := splitRules(service.AccessControl.WhiteList)
+		whiteList := public.SplitRules(service.AccessControl.WhiteList)
 		if service.AccessControl.OpenAuth == 1 && len(whiteList) > 0 {
 			clientIP := remoteIP(c)
-			if !inList(clientIP, whiteList) {
+			if !public.InList(clientIP, whiteList) {
 				middleware.ResponseError(c, 3001, fmt.Errorf("%s not in white ip list", clientIP))
 				c.Abort()
 				return
@@ -45,11 +46,11 @@ func HTTPBlackListMiddleware() gin.HandlerFunc {
 		}
 		service := serviceInterface.(*dao.ServiceDetail)
 
-		whiteList := splitRules(service.AccessControl.WhiteList)
-		blackList := splitRules(service.AccessControl.BlackList)
+		whiteList := public.SplitRules(service.AccessControl.WhiteList)
+		blackList := public.SplitRules(service.AccessControl.BlackList)
 		if service.AccessControl.OpenAuth == 1 && len(whiteList) == 0 && len(blackList) > 0 {
 			clientIP := remoteIP(c)
-			if inList(clientIP, blackList) {
+			if public.InList(clientIP, blackList) {
 				middleware.ResponseError(c, 3002, fmt.Errorf("%s in black ip list", clientIP))
 				c.Abort()
 				return
@@ -67,13 +68,4 @@ func remoteIP(c *gin.Context) string {
 		return c.Request.RemoteAddr
 	}
 	return host
-}
-
-func inList(ip string, list []string) bool {
-	for _, item := range list {
-		if item == ip {
-			return true
-		}
-	}
-	return false
 }

@@ -64,11 +64,11 @@
 ## 二、代理服务（server）
 
 ### 1. 启动流程（`main.go`）
-1. `ServiceManagerHandler.LoadOnce()` 从 MySQL 加载所有 HTTP 服务（4 张表批量查询，无 http 规则的服务跳过）
+1. `ServiceManagerHandler.LoadOnce()` 从 MySQL 加载所有 HTTP、TCP 服务（每张表批量查询一次，无 http 规则或 tcp 端口的服务跳过）
 2. `AppManagerHandler.LoadOnce()` 加载所有未删除租户
 3. `proxy.service.reload_interval > 0` 时开启定时热加载（服务和租户）
-4. 启动 HTTP 和 HTTPS 监听
-5. 收到 SIGINT / SIGTERM / SIGQUIT 后优雅关闭
+4. 启动 HTTP 和 HTTPS 监听，并按 TCP 服务的端口逐个启动 TCP 监听
+5. 收到 SIGINT / SIGTERM / SIGQUIT 后优雅关闭（TCP 连接最多等待 10 秒，超时强制关闭）
 
 ### 2. 不经过代理链的接口
 | 方法 | 路径 | 说明 |
@@ -187,6 +187,26 @@ dashboard 的 `flow_stat`、`service_statistics`、`app_stat`、`panel_group_dat
 - `proxy.service.reload_interval` 秒定时从 MySQL 重新加载服务和租户
 - 加载成功后整体原子替换，加载失败保留旧配置
 - dashboard 中修改服务/租户后，最多一个周期内在代理生效，无需重启
+- 服务加载成功后同步 TCP 监听：新增服务开始监听，删除服务或修改端口时关闭旧监听（已建立的连接不受影响）
+
+### 13. TCP 代理（`tcp_proxy_router/`、`tcp_proxy_middleware/`）
+- 每个 TCP 服务独占一个端口，监听 `proxy.tcp.host:port`；端口监听失败（如被占用）只记录日志，下次热加载时重试
+- 每条连接建立时按服务名取最新配置，访问控制、限流、`ip_list` 的修改无需重新监听
+- 中间件链（与 HTTP 顺序一致）：
+
+| 顺序 | 中间件 | 说明 |
+| --- | --- | --- |
+| 1 | `TCPFlowCountMiddleware` | 每条连接计 1 次，计入网关总流量和服务流量（被拒绝的连接也计入） |
+| 2 | `TCPFlowLimitMiddleware` | 服务限流、客户端 IP 限流，单位为**每秒新建连接数** |
+| 3 | `TCPWhiteListMiddleware` | 规则同 HTTP 白名单 |
+| 4 | `TCPBlackListMiddleware` | 规则同 HTTP 黑名单 |
+| 5 | `TCPReverseProxyMiddleware` | 随机选下游 `ip:port` 建连，双向转发 |
+
+- 被拒绝的连接直接关闭，只在代理日志中记录原因（TCP 没有统一的响应格式，没有错误码）
+- 转发时一端读到 EOF 会对另一端半关闭写端，另一个方向继续转发，响应不会被截断
+- 上游参数：`upstream_connect_timeout` 为建连超时（默认 30 秒）；`upstream_idle_timeout` 为两个方向都没有数据的最长时间，超过后断开，**0 表示不限制**（与 HTTP 含义不同，TCP 长连接常态空闲）；`upstream_header_timeout`、`upstream_max_idle` 不适用
+- 不支持：租户 JWT 认证（纯 TCP 无法携带 token）、`white_host_name`、header/URL 改写
+- dashboard 新增/修改 TCP 服务时会拒绝与网关自身端口（`proxy.http.addr`、`proxy.https.addr`、`base.http.addr`）冲突的端口
 
 ---
 
@@ -211,6 +231,9 @@ dashboard 的 `flow_stat`、`service_statistics`、`app_stat`、`panel_group_dat
     addr = "127.0.0.1:4433"
     cert_file = "./conf/dev/cert/cert.pem"
     key_file = "./conf/dev/cert/key.pem"
+
+[tcp]
+    host = "127.0.0.1"       # TCP 服务监听 IP，端口取各服务的 port；"" 表示监听所有网卡
 
 [service]
     reload_interval = 10     # 服务/租户热加载间隔（秒），0 表示不热加载
@@ -255,7 +278,9 @@ dashboard 的 `flow_stat`、`service_statistics`、`app_stat`、`panel_group_dat
 | `router/` | dashboard 路由与 HTTP 服务 |
 | `http_proxy_router/` | 代理服务路由、HTTP/HTTPS 服务、`/oauth/tokens` |
 | `http_proxy_middleware/` | 代理中间件链 |
-| `reverse_proxy/` | 反向代理与负载均衡 |
+| `tcp_proxy_router/` | TCP 代理端口监听管理 |
+| `tcp_proxy_middleware/` | TCP 代理中间件链 |
+| `reverse_proxy/` | HTTP/TCP 反向代理与负载均衡 |
 | `public/` | 公共方法（JWT 编解码等） |
 | `docs/` | swagger 文档 |
 
@@ -266,4 +291,4 @@ dashboard 的 `flow_stat`、`service_statistics`、`app_stat`、`panel_group_dat
 - 轮询、加权轮询、一致性哈希负载均衡（按 `round_type`）
 - 服务 `white_host_name` 校验
 - 下游健康检查（`check_method` / `check_timeout` / `check_interval`）
-- TCP、GRPC 代理（目前只有管理后台的配置接口）
+- GRPC 代理（目前只有管理后台的配置接口）

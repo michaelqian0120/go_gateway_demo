@@ -53,3 +53,23 @@ func TestTransportRebuildOnConfigChange(t *testing.T) {
 		t.Error("upstream timeout changed, transport should be rebuilt")
 	}
 }
+
+func TestLoadBalancerTCPAddrWithoutScheme(t *testing.T) {
+	m := &LoadBalancerManager{lbMap: map[string]*lbItem{}}
+	svc := newLBTestService("tcp_svc", "127.0.0.1:6379", 0)
+	svc.Info.LoadType = LoadTypeTCP
+	lb, err := m.GetLoadBalancer(svc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if addr, _ := lb.Get(""); addr != "127.0.0.1:6379" {
+		t.Errorf("addr=%s, want 127.0.0.1:6379", addr)
+	}
+
+	// 同名服务类型变化时不能复用旧的负载均衡器
+	svc2 := newLBTestService("tcp_svc", "127.0.0.1:6379", 0)
+	lb2, _ := m.GetLoadBalancer(svc2)
+	if addr, _ := lb2.Get(""); addr != "http://127.0.0.1:6379" {
+		t.Errorf("addr=%s, want http://127.0.0.1:6379", addr)
+	}
+}

@@ -35,6 +35,11 @@ func (service *ServiceController) ServiceAddTCP(c *gin.Context) {
 		return
 	}
 
+	if err := checkTCPPortReserved(params.Port); err != nil {
+		middleware.ResponseError(c, middleware.ValidErrorCode, err)
+		return
+	}
+
 	if existTCPRule, err := (&dao.ServiceTCPRule{}).FindByPort(tx, params.Port); err != nil {
 		middleware.ResponseError(c, middleware.InternalErrorCode, err)
 		return

@@ -28,7 +28,7 @@ var LoadBalancerHandler = &LoadBalancerManager{lbMap: map[string]*lbItem{}}
 
 func (m *LoadBalancerManager) GetLoadBalancer(service *ServiceDetail) (load_balance.LoadBalance, error) {
 	name := service.Info.ServiceName
-	signature := fmt.Sprintf("%d|%s", service.LoadBalance.RoundType, service.LoadBalance.IpList)
+	signature := fmt.Sprintf("%d|%d|%s", service.Info.LoadType, service.LoadBalance.RoundType, service.LoadBalance.IpList)
 	m.locker.RLock()
 	item, ok := m.lbMap[name]
 	m.locker.RUnlock()
@@ -46,10 +46,11 @@ func (m *LoadBalancerManager) GetLoadBalancer(service *ServiceDetail) (load_bala
 	if len(ipList) == 0 {
 		return nil, errors.New("service " + name + " has no ip_list")
 	}
-	// need_https 指网关对外是否支持https，与下游协议无关；下游默认http，可在ip_list里写明协议
+	// HTTP服务：need_https 指网关对外是否支持https，与下游协议无关；下游默认http，可在ip_list里写明协议
+	// TCP服务：直接使用 ip:port，不加协议前缀
 	addrs := make([]string, 0, len(ipList))
 	for _, ip := range ipList {
-		if !strings.Contains(ip, "://") {
+		if service.Info.LoadType == LoadTypeHTTP && !strings.Contains(ip, "://") {
 			ip = "http://" + ip
 		}
 		addrs = append(addrs, ip)
