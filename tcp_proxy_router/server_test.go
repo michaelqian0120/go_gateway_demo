@@ -156,8 +156,8 @@ func TestTCPProxyBlackList(t *testing.T) {
 	m.Sync([]*dao.ServiceDetail{svc})
 
 	got, _ := roundTrip(m.Addr(port), "hello")
-	if got != "" {
-		t.Errorf("black listed client got %q, want connection closed", got)
+	if want := "127.0.0.1 in black ip list\r\n"; got != want {
+		t.Errorf("black listed client got %q, want %q", got, want)
 	}
 	if n := accepted.get(); n != 0 {
 		t.Errorf("upstream accepted %d connections, want 0", n)
@@ -188,7 +188,7 @@ func TestTCPProxyServiceFlowLimit(t *testing.T) {
 	if got, _ := roundTrip(m.Addr(port), "a"); got != "got:a" {
 		t.Fatalf("first connection got %q, want got:a", got)
 	}
-	if got, _ := roundTrip(m.Addr(port), "b"); got != "" {
+	if got, _ := roundTrip(m.Addr(port), "b"); got != "service flow limit 1/s\r\n" {
 		t.Errorf("second connection within 1s got %q, want rejected", got)
 	}
 }

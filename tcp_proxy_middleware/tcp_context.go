@@ -1,9 +1,11 @@
 package tcp_proxy_middleware
 
 import (
+	"io"
 	"log"
 	"math"
 	"net"
+	"time"
 
 	"go_gateway_demo/dao"
 )
@@ -42,10 +44,29 @@ func (c *TCPContext) IsAborted() bool {
 	return c.index >= abortIndex
 }
 
-// Reject TCP没有统一的响应格式，拒绝时只记录日志并中止，连接由调用方关闭
+// rejectTimeout 回写拒绝原因、等待客户端关闭的最长时间，避免客户端不配合时卡住处理协程
+const rejectTimeout = time.Second
+
+// Reject 记录日志，把拒绝原因以一行纯文本回写给客户端后中止，连接由调用方关闭
+// TCP没有统一的响应格式，回写的文本只方便 telnet 等工具排查，不是协议的一部分
 func (c *TCPContext) Reject(reason string) {
 	log.Printf(" [WARN] tcp proxy service:%s client:%s rejected: %s\n", c.Service.Info.ServiceName, c.Conn.RemoteAddr(), reason)
+	c.Conn.SetDeadline(time.Now().Add(rejectTimeout))
+	if _, err := c.Conn.Write([]byte(reason + "\r\n")); err == nil {
+		lingerClose(c.Conn)
+	}
 	c.Abort()
+}
+
+// lingerClose 半关闭写端后丢弃客户端已发来的数据，直到客户端关闭或超时。
+// 接收缓冲区还有未读数据时直接 Close 会发 RST，客户端可能来不及读到拒绝原因
+func lingerClose(conn net.Conn) {
+	cw, ok := conn.(interface{ CloseWrite() error })
+	if !ok {
+		return
+	}
+	cw.CloseWrite()
+	io.Copy(io.Discard, conn)
 }
 
 // ClientIP 取TCP连接的对端IP

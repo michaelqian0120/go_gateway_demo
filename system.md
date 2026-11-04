@@ -202,7 +202,12 @@ dashboard 的 `flow_stat`、`service_statistics`、`app_stat`、`panel_group_dat
 | 4 | `TCPBlackListMiddleware` | 规则同 HTTP 黑名单 |
 | 5 | `TCPReverseProxyMiddleware` | 随机选下游 `ip:port` 建连，双向转发 |
 
-- 被拒绝的连接直接关闭，只在代理日志中记录原因（TCP 没有统一的响应格式，没有错误码）
+- 被拒绝时把原因以一行纯文本回写给客户端后关闭连接，并在代理日志中记录（TCP 没有统一的响应格式，没有错误码）。回写内容：
+  - 服务限流：`service flow limit <n>/s`
+  - 客户端 IP 限流：`<ip> flow limit <n>/s`
+  - 白名单：`<ip> not in white ip list`
+  - 黑名单：`<ip> in black ip list`
+  - 下游节点不可用（负载均衡取不到节点）：负载均衡器返回的错误信息；建连下游失败时不回写，直接关闭
 - 转发时一端读到 EOF 会对另一端半关闭写端，另一个方向继续转发，响应不会被截断
 - 上游参数：`upstream_connect_timeout` 为建连超时（默认 30 秒）；`upstream_idle_timeout` 为两个方向都没有数据的最长时间，超过后断开，**0 表示不限制**（与 HTTP 含义不同，TCP 长连接常态空闲）；`upstream_header_timeout`、`upstream_max_idle` 不适用
 - 不支持：租户 JWT 认证（纯 TCP 无法携带 token）、`white_host_name`、header/URL 改写
