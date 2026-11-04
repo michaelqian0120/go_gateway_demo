@@ -169,6 +169,7 @@ func (m *TCPServerManager) StopAll(ctx context.Context) {
 	for port, srv := range m.servers {
 		srv.ln.Close()
 		delete(m.servers, port)
+		log.Printf(" [INFO] TcpProxyStop service:%s port:%d\n", srv.serviceName, port)
 	}
 	m.locker.Unlock()
 
